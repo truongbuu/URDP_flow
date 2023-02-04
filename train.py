@@ -35,12 +35,12 @@ lambda_MSE = 10
 """
 parser = argparse.ArgumentParser('training config')
 parser.add_argument('--total_epochs', type=int, default=300, help='number of epochs of training')
-parser.add_argument('--lambda_gp', type=int, default=10, help='number of epochs of training')
+parser.add_argument('--lambda_gp', type=int, default=50, help='number of epochs of training')
 parser.add_argument('--bs', type=int, default=64, help='size of the batch')
 parser.add_argument('--dim', type=int, default=128, help='common_dim')
 parser.add_argument('--z_dim', type=int, default=1, help='z dim')
 parser.add_argument('--L', type=int, default=2, help='z dim')
-parser.add_argument('--skip_fq', type=int, default=5, help='loop frequency for WGAN')
+parser.add_argument('--skip_fq', type=int, default=10, help='loop frequency for WGAN')
 parser.add_argument('--d_penalty', type=float, default=0.0, help='diversity penalty')
 parser.add_argument('--lambda_P', type=float, default=0.0, help='Perceptual Penalty, keep at 1.0')
 parser.add_argument('--lambda_PM', type=float, default=0.0, help='Perceptual Penalty Marginal, keep at 1.0')
@@ -162,7 +162,7 @@ def main():
     discriminator_M.cuda()
 
     #Define Data Loader
-    train_loader, test_loader = get_dataloader(data_root='/tmp/', seq_len=8, batch_size=bs, num_digits=1)
+    train_loader, test_loader = get_dataloader(data_root='./data/', seq_len=8, batch_size=bs, num_digits=1)
     mse = torch.nn.MSELoss()
 
     #discriminator.train()
@@ -224,11 +224,17 @@ def main():
 
                 opt_ssf.step()
                 
-        show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE, d_penalty " + str(lambda_PM) + str(lambda_P)+ " " \
-        +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, discriminator, discriminator_M, test_loader))
-        print (show_str)
+        if epoch %10 == 0:
+            show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE, d_penalty " + str(lambda_PM) + str(lambda_P)+ " " \
+            +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, discriminator, discriminator_M, test_loader))
+            print (show_str)
         
-        f.write(show_str+"\n")
+            f.write(show_str+"\n")
+    
+    show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE, d_penalty " + str(lambda_PM) + str(lambda_P)+ " " \
+            +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, discriminator, discriminator_M, test_loader))
+    print (show_str)
+    f.write(show_str+"\n")
 
     set_models_state(list_models, 'eval')
 
