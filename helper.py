@@ -100,7 +100,8 @@ class ScaleSpaceFlow(nn.Module):
         dim=1,
         stochastic = False,
         quantize_latents = False,
-        L=2, q_limits=(-1.0, 1.0)
+        L=2, q_limits=(-1.0, 1.0),
+        freeze_enc=False
     ):
         super().__init__()
 
@@ -163,6 +164,8 @@ class ScaleSpaceFlow(nn.Module):
         self.num_levels = num_levels
         self.scale_field_shift = scale_field_shift
     
+        self.freeze_enc= freeze_enc
+
     def quantize(self, x):
         assert self.quantize_latents, f'Quantization disabled'
         x = self.q(x)
@@ -181,8 +184,8 @@ class ScaleSpaceFlow(nn.Module):
             y = y - noise 
         return y
     
-    def forward(self, x_cur, x_ref, freeze_enc=False):
-        if not freeze_enc:
+    def forward(self, x_cur, x_ref):
+        if not self.freeze_enc:
             # encode the motion information
             x = torch.cat((x_cur, x_ref), dim=1)
             y_motion = self.motion_encoder(x)
