@@ -107,7 +107,7 @@ def main():
     L = args.L
     
     #Create folder:
-    folder_name='I_FRAME_dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|lambda_gp_'+str(lambda_gp) \
+    folder_name='I_FRAME_dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_'+str(L) + '|lambda_gp_'+str(lambda_gp) \
         +'|bs_'+str(bs)+'|dpenalty_'+str(d_penalty)+'|lambdaP_'+str(lambda_P)+'|lambdaPM_'+str(lambda_PM)+'|lambdaMSE_' + str(lambda_MSE)
     print ("Settings: ", folder_name)
 
@@ -120,7 +120,7 @@ def main():
     encoder.cuda()
     decoder.cuda()
     discriminator_M.cuda()
-    train_loader, test_loader = get_dataloader(data_root='/tmp/', seq_len=2, batch_size=bs, num_digits=1)
+    train_loader, test_loader = get_dataloader(data_root='./data/', seq_len=2, batch_size=bs, num_digits=1)
     mse = torch.nn.MSELoss()
     
     opt_e = torch.optim.RMSprop(encoder.parameters(), lr=1e-4)
