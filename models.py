@@ -379,27 +379,32 @@ class Discriminator(nn.Module):
         out = self.net(x)
 
         return out.squeeze(-1).squeeze(-1).squeeze(-1)
-    
+
 class Discriminator_Iframe(nn.Module):
     def __init__(self, ch=64, out_ch=1):
         super(Discriminator_Iframe, self).__init__()
-
+        im_w = 64
+        im_h = 64
         self.net = nn.Sequential(
             nn.Conv2d(out_ch, ch, 4, 2, 1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.LayerNorm([ch, im_w//2, im_h//2]),
 
             nn.Conv2d(ch, ch*2, 4, 2, 1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.LayerNorm([ch*2, im_w//4, im_h//4]),
 
             nn.Conv2d(ch*2, ch*4, 4, 2, 1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.LayerNorm([ch*4, im_w//8, im_h//8]),
 
             nn.Conv2d(ch*4, ch*8, 4, 2, 1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.LayerNorm([ch*8, im_w//16, im_h//16]),
 
             nn.Conv2d(ch*8, 1, 4, 1, 0),
         )
-        
+
         self.init_weights()
 
     def init_weights(self):

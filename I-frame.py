@@ -31,7 +31,7 @@ parser.add_argument('--z_dim', type=int, default=4, help='z dim')
 parser.add_argument('--L', type=int, default=16, help='L size')
 parser.add_argument('--skip_fq', type=int, default=5, help='loop frequency for WGAN')
 parser.add_argument('--d_penalty', type=float, default=0.0, help='diversity penalty')
-parser.add_argument('--lambda_P', type=float, default=1.0, help='Perceptual Penalty, keep at 1.0')
+parser.add_argument('--lambda_P', type=float, default=0.0, help='Perceptual Penalty, keep at 1.0')
 parser.add_argument('--lambda_PM', type=float, default=1.0, help='Perceptual Penalty Marginal, keep at 1.0')
 parser.add_argument('--lambda_MSE', type=float, default=1.0, help='Perceptual Penalty')
 
@@ -116,7 +116,7 @@ def main():
     
     encoder = Encoder(dim=z_dim, nc=1, stochastic=True, quantize_latents=True, L=L) #Generator Side
     decoder = Decoder_Iframe(dim=z_dim) #Generator Side
-    discriminator_M = Discriminator(out_ch=1) #Marginal Discriminator
+    discriminator_M = Discriminator_Iframe(out_ch=1) #Marginal Discriminator
     encoder.cuda()
     decoder.cuda()
     discriminator_M.cuda()
