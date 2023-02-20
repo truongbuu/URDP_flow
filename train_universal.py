@@ -46,6 +46,7 @@ parser.add_argument('--lambda_P', type=float, default=0.0, help='Perceptual Pena
 parser.add_argument('--lambda_PM', type=float, default=0.0, help='Perceptual Penalty Marginal, keep at 1.0')
 parser.add_argument('--lambda_MSE', type=float, default=1.0, help='Perceptual Penalty')
 parser.add_argument('--ssf_path', type=str, default=None, help='PATH to Enc-Dec')
+parser.add_argument('--path', type=str, default='./data/', help='Perceptual Penalty')
 
 
 def compute_gradient_penalty(D, real_samples, fake_samples):
@@ -141,6 +142,7 @@ def main():
     lambda_MSE = args.lambda_MSE
     L = args.L
     ssf_path = args.ssf_path
+    path = args.path
 
     #Create folder
     #Create folder:
@@ -163,7 +165,7 @@ def main():
     discriminator_M.cuda()
 
     #Define Data Loader
-    train_loader, test_loader = get_dataloader(data_root='./data/', seq_len=8, batch_size=bs, num_digits=1)
+    train_loader, test_loader = get_dataloader(data_root=path, seq_len=8, batch_size=bs, num_digits=1)
     mse = torch.nn.MSELoss()
 
     #discriminator.train()
