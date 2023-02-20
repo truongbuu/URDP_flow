@@ -90,7 +90,7 @@ def cal_W1(ssf, encoder, decoder, discriminator, discriminator_M, test_loader, l
             x_hat = ssf(x_cur, x_ref)
         
         
-            fake_vid = torch.cat((x[:,:,0,:,:], x_hat), dim = 1).detach()
+            fake_vid = torch.cat((x_ref, x_hat), dim = 1).detach()
             real_vid = x[:,0,:2,...].detach() #this looks good!
             
             fake_validity = discriminator(fake_vid)
