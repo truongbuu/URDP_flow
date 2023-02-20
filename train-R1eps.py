@@ -162,16 +162,16 @@ def main():
     discriminator_M.cuda()
 
     #Define fixed model
-    I_dim = 8
-    encoder = Encoder(dim=I_dim, nc=1, stochastic=True, quantize_latents=True, L=16) #Generator Side
+    I_dim = 12 #8
+    encoder = Encoder(dim=I_dim, nc=1, stochastic=True, quantize_latents=True, L=2) #Generator Side
     decoder = Decoder_Iframe(dim=I_dim) #Generator Side
 
     encoder.cuda()
     decoder.cuda()
     encoder.eval()
     decoder.eval()
-    encoder.load_state_dict(torch.load('./saved_models/Iframe/I2/1.0MSE_P0.5_I_frame_encoder.pth'))
-    decoder.load_state_dict(torch.load('./saved_models/Iframe/I2/1.0MSE_P0.5_I_frame_decoder.pth'))
+    encoder.load_state_dict(torch.load('./Iframe/I3/I_frame_encoder_zdim_12_L_2.pth'))
+    decoder.load_state_dict(torch.load('./Iframe/I3/I_frame_decoder_zdim_12_L_2.pth'))
     
     #Define Data Loader
     train_loader, test_loader = get_dataloader(data_root='/tmp/', seq_len=8, batch_size=bs, num_digits=1)
