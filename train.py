@@ -152,8 +152,8 @@ def main():
     f = open('./saved_models/'+ folder_name + "/performance.txt", "a")
 
     #Define Models
-    discriminator = Discriminator(out_ch=2) #Generator Side
-    discriminator_M = Discriminator(out_ch=1) #Marginal Discriminator
+    discriminator = Discriminator_Iframe(out_ch=2) #Generator Side
+    discriminator_M = Discriminator_Iframe(out_ch=1) #Marginal Discriminator
     ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L)
 
     list_models = [discriminator, discriminator_M, ssf]
