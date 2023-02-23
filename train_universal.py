@@ -137,9 +137,9 @@ def main():
     d_penalty = args.d_penalty #0
     skip_fq = args.skip_fq #10
     total_epochs = args.total_epochs #200
-    lambda_P = args.lambda_P
-    lambda_PM = args.lambda_PM
-    lambda_MSE = args.lambda_MSE
+    lambda_P = args.lambda_P*1e-5
+    lambda_PM = args.lambda_PM*1e-5
+    lambda_MSE = args.lambda_MSE*1e-3
     L = args.L
     ssf_path = args.ssf_path
     path = args.path
@@ -154,8 +154,8 @@ def main():
     f = open('./saved_models/'+ folder_name + "/performance.txt", "a")
 
     #Define Models
-    discriminator = Discriminator_Iframe(out_ch=2) #Generator Side
-    discriminator_M = Discriminator_Iframe(out_ch=1) #Marginal Discriminator
+    discriminator = Discriminator_v3(out_ch=2) #Generator Side
+    discriminator_M = Discriminator_v3(out_ch=1) #Marginal Discriminator
     ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L, freeze_enc=True)
 
     list_models = [discriminator, discriminator_M, ssf]
@@ -169,9 +169,9 @@ def main():
     mse = torch.nn.MSELoss()
 
     #discriminator.train()
-    opt_ssf= torch.optim.RMSprop(ssf.parameters(), lr=5e-5)
-    opt_d = torch.optim.RMSprop(discriminator.parameters(), lr=5e-5)
-    opt_dm = torch.optim.RMSprop(discriminator_M.parameters(), lr=5e-5)
+    opt_ssf= torch.optim.RMSprop(ssf.parameters(), lr=5e-4)
+    opt_d = torch.optim.RMSprop(discriminator.parameters(), lr=2e-4)
+    opt_dm = torch.optim.RMSprop(discriminator_M.parameters(), lr=2e-4)
     
     list_opt = [opt_ssf, opt_d, opt_dm]
     
