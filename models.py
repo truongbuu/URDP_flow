@@ -380,6 +380,55 @@ class Discriminator(nn.Module):
 
         return out.squeeze(-1).squeeze(-1).squeeze(-1)
 
+class Discriminator_v3(nn.Module):
+    def __init__(self, ch=64, out_ch=2):
+        super(Discriminator_v3, self).__init__()
+        
+        self.net = nn.Sequential(
+            spectralnorm(nn.Conv2d(out_ch, ch, 4, 2, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            spectralnorm(nn.Conv2d(ch, ch*2, 4, 2, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            spectralnorm(nn.Conv2d(ch*2, ch*4, 4, 2, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Conv2d(ch*4, ch*8, 4, 2, 1),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Conv2d(ch*8, 1, 4, 1, 0),
+        )
+        
+        """self.net = nn.Sequential(
+            nn.Conv2d(out_ch, ch, 4, 2, 1),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            spectralnorm(nn.Conv2d(ch, ch*2, 4, 2, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            spectralnorm(nn.Conv2d(ch*2, ch*4, 4, 2, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            spectralnorm(nn.Conv2d(ch*4, ch*8, 4, 2, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Conv2d(ch*8, 1, 4, 1, 0),
+        )"""
+
+        self.init_weights()
+
+    def init_weights(self):
+        for module in self.modules():
+            if isinstance(module, nn.Conv2d):
+                init.normal_(module.weight, 0, 0.02)
+
+    def forward(self, x):
+
+        out = self.net(x)
+
+        return out.squeeze(-1).squeeze(-1).squeeze(-1)
+    
 class Discriminator_Iframe(nn.Module):
     def __init__(self, ch=64, out_ch=1):
         super(Discriminator_Iframe, self).__init__()
