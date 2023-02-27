@@ -45,7 +45,8 @@ parser.add_argument('--d_penalty', type=float, default=0.0, help='diversity pena
 parser.add_argument('--lambda_P', type=float, default=0.0, help='Perceptual Penalty, keep at 1.0')
 parser.add_argument('--lambda_PM', type=float, default=0.0, help='Perceptual Penalty Marginal, keep at 1.0')
 parser.add_argument('--lambda_MSE', type=float, default=1.0, help='Perceptual Penalty')
-parser.add_argument('--path', type=str, default='./data/', help='Perceptual Penalty')
+parser.add_argument('--path', type=str, default='./data/', help='Data Path')
+parser.add_argument('--pre_path', type=str, default='./fixed_models/', help='Pretrained_Path')
 
 
 def compute_gradient_penalty(D, real_samples, fake_samples):
@@ -87,14 +88,14 @@ def cal_W1(ssf, discriminator, discriminator_M, test_loader):
             x_cur = x[:,:,1,...]
             x_ref = x[:,:,0,...]
             x_hat = ssf(x_cur, x_ref)
-        
-        
+
+
             fake_vid = torch.cat((x[:,:,0,:,:], x_hat), dim = 1).detach()
             real_vid = x[:,0,:2,...].detach() #this looks good!
-            
+
             fake_validity = discriminator(fake_vid)
             real_validity = discriminator(real_vid)
-            
+
             fake_img = x_hat.detach()
             real_img = x[:,0,6:7,...].detach()
             fake_valid_m = discriminator_M(fake_img)
@@ -124,7 +125,7 @@ def set_models_state(list_models, state):
 def set_opt_zero(opts):
     for opt in opts:
         opt.zero_grad()
-        
+
 
 def main():
     args = parser.parse_args()
@@ -136,11 +137,12 @@ def main():
     d_penalty = args.d_penalty #0
     skip_fq = args.skip_fq #10
     total_epochs = args.total_epochs #200
-    lambda_P = args.lambda_P*1e-5
-    lambda_PM = args.lambda_PM*1e-5
+    lambda_P = args.lambda_P*1e-3
+    lambda_PM = args.lambda_PM*1e-3
     lambda_MSE = args.lambda_MSE*1e-3
     L = args.L
     path = args.path
+    pre_path = args.pre_path
 
     #Create folder
     #Create folder:
@@ -162,6 +164,17 @@ def main():
     discriminator.cuda()
     discriminator_M.cuda()
 
+    #Load models:
+    prefix_path = 'z'+str(z_dim)+'l'+str(L)+'_MMSE'
+    ssf.motion_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_enc.pth'))
+    ssf.motion_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_dec.pth'))
+    ssf.P_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/p_enc.pth'))
+    ssf.res_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_enc.pth'))
+    ssf.res_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_dec.pth'))
+
+    discriminator.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator.pth'))
+    discriminator_M.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator_M.pth'))
+
     #Define Data Loader
     train_loader, test_loader = get_dataloader(data_root=path, seq_len=8, batch_size=bs, num_digits=1)
     mse = torch.nn.MSELoss()
@@ -170,7 +183,7 @@ def main():
     opt_ssf= torch.optim.RMSprop(ssf.parameters(), lr=5e-4)
     opt_d = torch.optim.RMSprop(discriminator.parameters(), lr=2e-4)
     opt_dm = torch.optim.RMSprop(discriminator_M.parameters(), lr=2e-4)
-    
+
     list_opt = [opt_ssf, opt_d, opt_dm]
 
     for epoch in range(total_epochs):
@@ -224,14 +237,14 @@ def main():
                 loss.backward()
 
                 opt_ssf.step()
-                
+
         if epoch %10 == 0:
             show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE, d_penalty " + str(lambda_PM) + str(lambda_P)+ " " \
             +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, discriminator, discriminator_M, test_loader))
             print (show_str)
-        
+
             f.write(show_str+"\n")
-    
+
     show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE, d_penalty " + str(lambda_PM) + str(lambda_P)+ " " \
             +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, discriminator, discriminator_M, test_loader))
     print (show_str)

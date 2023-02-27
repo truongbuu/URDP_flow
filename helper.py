@@ -137,12 +137,12 @@ class ScaleSpaceFlow_res(nn.Module):
                     nn.LeakyReLU(0.2, inplace=True),
                     deconv(mid_planes, out_planes, kernel_size=5, stride=2),
                 )
-        
+
         self.stochastic = stochastic
         self.quantize_latents = quantize_latents
         self.L=L
         self.q_limits=q_limits
-        
+
         if self.quantize_latents:
             # Quantize to L uniformly spaced points between limits
             centers = generate_centers(L, q_limits)
@@ -153,17 +153,17 @@ class ScaleSpaceFlow_res(nn.Module):
             # Else if not quantizing, make alpha default value of 0.25
             if self.quantize_latents:
                 self.alpha = (q_limits[1] - q_limits[0])/(L-1)
-        
+
         self.res_encoder = Encoder(1, out_planes=dim)
         self.res_decoder = Decoder(1, in_planes=dim*2)
-        
+
         self.motion_encoder = Encoder(2 * 1, out_planes=dim)
         self.motion_decoder = Decoder(2 + 1, in_planes=dim)
-        
+
         self.sigma0 = sigma0
         self.num_levels = num_levels
         self.scale_field_shift = scale_field_shift
-    
+
         self.freeze_enc= freeze_enc
 
     def quantize(self, x):
@@ -174,16 +174,16 @@ class ScaleSpaceFlow_res(nn.Module):
     def quantize_noise(self, y):
         # Quantize
         noise = torch.zeros_like(y)
-        
+
         if self.stochastic:
             noise += uniform_noise(y.size(), self.alpha).cuda()
             y = y + noise
         if self.quantize_latents:
             y = self.q(y)
         if self.stochastic:
-            y = y - noise 
+            y = y - noise
         return y
-    
+
     def forward(self, x_cur, x_ref):
         if not self.freeze_enc:
             # encode the motion information
@@ -218,22 +218,22 @@ class ScaleSpaceFlow_res(nn.Module):
                 x = torch.cat((x_cur, x_ref), dim=1)
                 y_motion = self.motion_encoder(x)
                 y_motion = self.quantize_noise(y_motion)
-                
+
             motion_info = self.motion_decoder(y_motion)
             #print ("Motion Info: ", y_motion.shape)
             x_pred = self.forward_prediction(x_ref, motion_info)
-            
+
             with torch.no_grad():
                 x_res = x_cur - x_pred
                 y_res = self.res_encoder(x_res)
                 y_res = self.quantize_noise(y_res)
-            
+
             y_combine = torch.cat((y_res, y_motion), dim=1)
             x_res_hat = self.res_decoder(y_combine)
             x_rec = x_pred + x_res_hat
-        
+
         return x_rec
-    
+
     def forward_getmotion(self, x_cur, x_ref):
         # encode the motion information
         x = torch.cat((x_cur, x_ref), dim=1)
@@ -255,7 +255,7 @@ class ScaleSpaceFlow_res(nn.Module):
         x_rec = x_pred + x_res_hat
 
         return x_rec, motion_info, x_res_hat
-    
+
     @staticmethod
     def gaussian_volume(x, sigma: float, num_levels: int):
         """Efficient gaussian volume construction.
@@ -318,7 +318,7 @@ class ScaleSpaceFlow_res(nn.Module):
 
         return aux_loss_list
 
-    
+
 class ScaleSpaceFlow(nn.Module):
     r"""Google's first end-to-end optimized video compression from E.
     Agustsson, D. Minnen, N. Johnston, J. Balle, S. J. Hwang, G. Toderici: `"Scale-space flow for end-to-end
@@ -358,10 +358,10 @@ class ScaleSpaceFlow(nn.Module):
                     conv(mid_planes, mid_planes, kernel_size=5, stride=2),
                     nn.BatchNorm2d(mid_planes),
                     nn.LeakyReLU(0.2, inplace=True),
-                    conv(mid_planes, 4, kernel_size=5, stride=2),
-                    nn.BatchNorm2d(4),
+                    conv(mid_planes, mid_planes, kernel_size=5, stride=2),
+                    nn.BatchNorm2d(mid_planes),
                     nn.LeakyReLU(0.2, inplace=True),
-                    conv(4, out_planes, kernel_size=4, stride=1, padding=False)
+                    conv(mid_planes, out_planes, kernel_size=4, stride=1, padding=False)
                 )
 
         class Decoder(nn.Sequential):
@@ -369,10 +369,10 @@ class ScaleSpaceFlow(nn.Module):
                 self, out_planes: int, in_planes: int = 192, mid_planes: int = 128
             ):
                 super().__init__(
-                    deconv(in_planes, 4, kernel_size=4, stride=1, padding=False),
-                    nn.BatchNorm2d(4),
+                    deconv(in_planes, mid_planes, kernel_size=4, stride=1, padding=False),
+                    nn.BatchNorm2d(mid_planes),
                     nn.LeakyReLU(0.2, inplace=True),
-                    deconv(4, mid_planes, kernel_size=5, stride=2),
+                    deconv(mid_planes, mid_planes, kernel_size=5, stride=2),
                     nn.BatchNorm2d(mid_planes),
                     nn.LeakyReLU(0.2, inplace=True),
                     deconv(mid_planes, mid_planes, kernel_size=5, stride=2),
@@ -382,6 +382,26 @@ class ScaleSpaceFlow(nn.Module):
                     nn.BatchNorm2d(mid_planes),
                     nn.LeakyReLU(0.2, inplace=True),
                     deconv(mid_planes, out_planes, kernel_size=5, stride=2),
+                )
+
+        class Encoder_P(nn.Sequential):
+            def __init__(
+                self, in_planes: int, mid_planes: int = 128, out_planes: int = 192
+            ):
+                super().__init__(
+                    conv(in_planes, mid_planes, kernel_size=5, stride=2),
+                    nn.BatchNorm2d(mid_planes),
+                    nn.LeakyReLU(0.2, inplace=True),
+                    conv(mid_planes, mid_planes, kernel_size=5, stride=2),
+                    nn.BatchNorm2d(mid_planes),
+                    nn.LeakyReLU(0.2, inplace=True),
+                    conv(mid_planes, mid_planes, kernel_size=5, stride=2),
+                    nn.BatchNorm2d(mid_planes),
+                    nn.LeakyReLU(0.2, inplace=True),
+                    conv(mid_planes, mid_planes, kernel_size=5, stride=2),
+                    nn.BatchNorm2d(mid_planes),
+                    nn.LeakyReLU(0.2, inplace=True),
+                    conv(mid_planes, out_planes, kernel_size=4, stride=1, padding=False)
                 )
 
         self.stochastic = stochastic
@@ -401,7 +421,7 @@ class ScaleSpaceFlow(nn.Module):
                 self.alpha = (q_limits[1] - q_limits[0])/(L-1)
 
         self.res_encoder = Encoder(2, out_planes=dim)
-        self.P_encoder = Encoder(1, out_planes=192)
+        self.P_encoder = Encoder_P(1, out_planes=192)
         self.res_decoder = Decoder(1, in_planes=dim + 192)
 
         self.motion_encoder = Encoder(2 * 1, out_planes=dim)
