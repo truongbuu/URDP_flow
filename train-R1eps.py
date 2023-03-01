@@ -163,12 +163,13 @@ def main():
     discriminator_M.cuda()
 
     #Load models:
-    prefix_path = 'R1eps_z'+str(z_dim)+'l'+str(L)+'_MMSE'
-    ssf.motion_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_enc.pth'))
-    ssf.motion_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_dec.pth'))
-    ssf.P_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/p_enc.pth'))
-    ssf.res_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_enc.pth'))
-    ssf.res_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_dec.pth'))
+    if pre_path != 'None':
+        prefix_path = 'R1eps_z'+str(z_dim)+'l'+str(L)+'_MMSE'
+        ssf.motion_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_enc.pth'))
+        ssf.motion_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_dec.pth'))
+        ssf.P_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/p_enc.pth'))
+        ssf.res_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_enc.pth'))
+        ssf.res_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_dec.pth'))
 
     #Define fixed model
     I_dim = 12 #8

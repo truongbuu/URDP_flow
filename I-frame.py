@@ -116,7 +116,7 @@ def main():
     
     encoder = Encoder(dim=z_dim, nc=1, stochastic=True, quantize_latents=True, L=L) #Generator Side
     decoder = Decoder_Iframe(dim=z_dim) #Generator Side
-    discriminator_M = Discriminator_Iframe(out_ch=1) #Marginal Discriminator
+    discriminator_M = Discriminator_v3(out_ch=1) #Marginal Discriminator
     encoder.cuda()
     decoder.cuda()
     discriminator_M.cuda()
