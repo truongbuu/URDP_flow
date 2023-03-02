@@ -110,7 +110,7 @@ class Encoder(nn.Module):
         self.c5 = nn.Sequential(
                 nn.Conv2d(nf * 8, dim, 4, 1, 0),
                 nn.BatchNorm2d(dim),
-                #nn.Tanh()
+                nn.Tanh()
                 )
 
         self.stochastic = stochastic

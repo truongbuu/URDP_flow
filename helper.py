@@ -496,10 +496,13 @@ class ScaleSpaceFlow(nn.Module):
                 x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
                 y_res = self.res_encoder(x_res)
                 y_res = self.quantize_noise(y_res)
-
-            y_combine = torch.cat((y_res, y_motion), dim=1)
+            
+            y_pred = self.P_encoder(x_pred)
+            y_combine = torch.cat((y_res, y_pred), dim=1)
             x_res_hat = self.res_decoder(y_combine)
-            x_rec = torch.sigmoid(x_res_hat)
+
+            # final reconstruction: prediction + residual
+            x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
 
         return x_rec
 
