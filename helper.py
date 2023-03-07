@@ -487,6 +487,119 @@ class ScaleSpaceFlow(nn.Module):
                 x = torch.cat((x_cur, x_ref), dim=1)
                 y_motion = self.motion_encoder(x)
                 y_motion = self.quantize_noise(y_motion)
+                
+                #Before this
+                motion_info = self.motion_decoder(y_motion)
+                #print ("Motion Info: ", y_motion.shape)
+                x_pred = self.forward_prediction(x_ref, motion_info)
+
+            with torch.no_grad():
+                x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
+                y_res = self.res_encoder(x_res)
+                y_res = self.quantize_noise(y_res)
+            
+                #OK this
+                y_pred = self.P_encoder(x_pred)
+                y_combine = torch.cat((y_res, y_pred), dim=1)
+                
+            x_res_hat = self.res_decoder(y_combine)
+
+            # final reconstruction: prediction + residual
+            x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
+
+        return x_rec
+
+    def forward_enc(self, x_cur, x_ref):
+        if not self.freeze_enc:
+            # encode the motion information
+            x = torch.cat((x_cur, x_ref), dim=1)
+            y_motion = self.motion_encoder(x)
+
+            #print (y_motion.min())
+            #print (y_motion.max())
+            # Quantize
+            y_motion = self.quantize_noise(y_motion)
+
+            # decode the space-scale flow information
+            motion_info = self.motion_decoder(y_motion)
+            #print ("Motion Info: ", y_motion.shape)
+            x_pred = self.forward_prediction(x_ref, motion_info)
+
+            # residual
+            x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
+            y_res = self.res_encoder(x_res)
+            y_res = self.quantize_noise(y_res)
+
+            y_pred = self.P_encoder(x_pred)
+
+            #print ("Residual Info: ", y_res.shape)
+
+            # y_combine
+            y_combine = torch.cat((y_res, y_pred), dim=1)
+            x_res_hat = self.res_decoder(y_combine)
+
+            # final reconstruction: prediction + residual
+            x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
+        else:
+            with torch.no_grad():
+                x = torch.cat((x_cur, x_ref), dim=1)
+                y_motion = self.motion_encoder(x)
+                y_motion = self.quantize_noise(y_motion)
+
+            motion_info = self.motion_decoder(y_motion)
+            #print ("Motion Info: ", y_motion.shape)
+            x_pred = self.forward_prediction(x_ref, motion_info)
+
+            with torch.no_grad():
+                x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
+                y_res = self.res_encoder(x_res)
+                y_res = self.quantize_noise(y_res)
+            
+            y_pred = self.P_encoder(x_pred)
+            y_combine = torch.cat((y_res, y_pred), dim=1)
+            x_res_hat = self.res_decoder(y_combine)
+
+            # final reconstruction: prediction + residual
+            x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
+
+        return motion_info, 
+    
+    def forward_dec(self, x_cur, x_ref):
+        if not self.freeze_enc:
+            # encode the motion information
+            x = torch.cat((x_cur, x_ref), dim=1)
+            y_motion = self.motion_encoder(x)
+
+            #print (y_motion.min())
+            #print (y_motion.max())
+            # Quantize
+            y_motion = self.quantize_noise(y_motion)
+
+            # decode the space-scale flow information
+            motion_info = self.motion_decoder(y_motion)
+            #print ("Motion Info: ", y_motion.shape)
+            x_pred = self.forward_prediction(x_ref, motion_info)
+
+            # residual
+            x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
+            y_res = self.res_encoder(x_res)
+            y_res = self.quantize_noise(y_res)
+
+            y_pred = self.P_encoder(x_pred)
+
+            #print ("Residual Info: ", y_res.shape)
+
+            # y_combine
+            y_combine = torch.cat((y_res, y_pred), dim=1)
+            x_res_hat = self.res_decoder(y_combine)
+
+            # final reconstruction: prediction + residual
+            x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
+        else:
+            with torch.no_grad():
+                x = torch.cat((x_cur, x_ref), dim=1)
+                y_motion = self.motion_encoder(x)
+                y_motion = self.quantize_noise(y_motion)
 
             motion_info = self.motion_decoder(y_motion)
             #print ("Motion Info: ", y_motion.shape)
@@ -505,28 +618,6 @@ class ScaleSpaceFlow(nn.Module):
             x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
 
         return x_rec
-
-    def forward_getmotion(self, x_cur, x_ref):
-        # encode the motion information
-        x = torch.cat((x_cur, x_ref), dim=1)
-        y_motion = self.motion_encoder(x)
-
-        # decode the space-scale flow information
-        motion_info = self.motion_decoder(y_motion)
-        x_pred = self.forward_prediction(x_ref, motion_info)
-
-        # residual
-        x_res = x_cur - x_pred
-        y_res = self.res_encoder(x_res)
-
-        # y_combine
-        y_combine = torch.cat((y_res, y_motion), dim=1)
-        x_res_hat = self.res_decoder(y_combine)
-
-        # final reconstruction: prediction + residual
-        x_rec = x_pred + x_res_hat
-
-        return x_rec, motion_info, x_res_hat
 
     @staticmethod
     def gaussian_volume(x, sigma: float, num_levels: int):
