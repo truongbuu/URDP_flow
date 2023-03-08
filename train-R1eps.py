@@ -143,6 +143,14 @@ def main():
     path = args.path
     pre_path = args.pre_path
     
+    #No quantization:
+    stochastic = True
+    quantize_latents = True
+    if L == -1:
+        stochastic = False
+        quantize_latents = False
+    print ('Stochastic: ', stochastic)
+    print ('Quantize: ', quantize_latents)
     #Create folder:
     folder_name='R1eps_dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_'+str(L)+'|lambda_gp_'+str(lambda_gp) \
         +'|bs_'+str(bs)+'|dpenalty_'+str(d_penalty)+'|lambdaP_'+str(lambda_P)+'|lambdaPM_'+str(lambda_PM)+'|lambdaMSE_' + str(lambda_MSE)
@@ -154,7 +162,7 @@ def main():
     #Define Models
     discriminator = Discriminator_v3(out_ch=2) #Generator Side
     discriminator_M = Discriminator_v3(out_ch=1) #Marginal Discriminator
-    ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L)
+    ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=stochastic, quantize_latents=quantize_latents, L=L)
 
     list_models = [discriminator, discriminator_M, ssf]
 
