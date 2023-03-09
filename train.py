@@ -165,15 +165,16 @@ def main():
     discriminator_M.cuda()
 
     #Load models:
-    prefix_path = 'z'+str(z_dim)+'l'+str(L)+'_MMSE'
-    ssf.motion_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_enc.pth'))
-    ssf.motion_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_dec.pth'))
-    ssf.P_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/p_enc.pth'))
-    ssf.res_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_enc.pth'))
-    ssf.res_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_dec.pth'))
+    if pre_path != 'None':
+        prefix_path = 'z'+str(z_dim)+'l'+str(L)+'_MMSE'
+        ssf.motion_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_enc.pth'))
+        ssf.motion_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_dec.pth'))
+        ssf.P_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/p_enc.pth'))
+        ssf.res_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_enc.pth'))
+        ssf.res_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_dec.pth'))
 
-    discriminator.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator.pth'))
-    discriminator_M.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator_M.pth'))
+        discriminator.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator.pth'))
+        discriminator_M.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator_M.pth'))
 
     #Define Data Loader
     train_loader, test_loader = get_dataloader(data_root=path, seq_len=8, batch_size=bs, num_digits=1)
