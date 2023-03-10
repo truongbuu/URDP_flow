@@ -181,9 +181,9 @@ def main():
     mse = torch.nn.MSELoss()
 
     #discriminator.train()
-    opt_ssf= torch.optim.Adam(ssf.parameters(), lr=1e-4)
-    opt_d = torch.optim.Adam(discriminator.parameters(), lr=1e-4)
-    opt_dm = torch.optim.Adam(discriminator_M.parameters(), lr=1e-4)
+    opt_ssf= torch.optim.Adam(ssf.parameters(), lr=1e-5)
+    opt_d = torch.optim.Adam(discriminator.parameters(), lr=1e-5)
+    opt_dm = torch.optim.Adam(discriminator_M.parameters(), lr=1e-5)
 
     list_opt = [opt_ssf, opt_d, opt_dm]
 

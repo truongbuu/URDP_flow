@@ -45,8 +45,9 @@ parser.add_argument('--d_penalty', type=float, default=0.0, help='diversity pena
 parser.add_argument('--lambda_P', type=float, default=0.0, help='Perceptual Penalty, keep at 1.0')
 parser.add_argument('--lambda_PM', type=float, default=0.0, help='Perceptual Penalty Marginal, keep at 1.0')
 parser.add_argument('--lambda_MSE', type=float, default=1.0, help='Perceptual Penalty')
-parser.add_argument('--path', type=str, default='./data/', help='Perceptual Penalty')
+parser.add_argument('--path', type=str, default='./data/', help='Data Path')
 parser.add_argument('--pre_path', type=str, default='./fixed_models/', help='Pretrained_Path')
+
 
 def compute_gradient_penalty(D, real_samples, fake_samples):
     """Calculates the gradient penalty loss for WGAN GP"""
@@ -69,10 +70,10 @@ def compute_gradient_penalty(D, real_samples, fake_samples):
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
     return gradient_penalty
 
-def cal_W1(ssf, encoder, decoder, discriminator, discriminator_M, test_loader, list_models):
+def cal_W1(ssf, discriminator, discriminator_M, test_loader):
     mse_loss = nn.MSELoss(reduction='sum')
-    mse_avg = nn.MSELoss()
-    set_models_state(list_models, 'eval')
+
+    set_models_state([ssf, discriminator, discriminator_M], 'eval')
 
     W1_distance = []
     W1M_distance = []
@@ -84,18 +85,17 @@ def cal_W1(ssf, encoder, decoder, discriminator, discriminator_M, test_loader, l
             #Get the data
             x = x.permute(0, 4, 1, 2, 3)
             x = x.cuda().float()
-
-            x_ref = decoder(encoder(x[:,:,0,...])[0]).detach()
             x_cur = x[:,:,1,...]
+            x_ref = x[:,:,0,...]
             x_hat = ssf(x_cur, x_ref)
-
-
-            fake_vid = torch.cat((x_ref, x_hat), dim = 1).detach()
+        
+        
+            fake_vid = torch.cat((x[:,:,0,:,:], x_hat), dim = 1).detach()
             real_vid = x[:,0,:2,...].detach() #this looks good!
-
+            
             fake_validity = discriminator(fake_vid)
             real_validity = discriminator(real_vid)
-
+            
             fake_img = x_hat.detach()
             real_img = x[:,0,6:7,...].detach()
             fake_valid_m = discriminator_M(fake_img)
@@ -105,6 +105,7 @@ def cal_W1(ssf, encoder, decoder, discriminator, discriminator_M, test_loader, l
             W1M_distance.append(torch.sum(real_valid_m) - torch.sum(fake_valid_m))
             #print (F.mse_loss(x[:,:,1,:,:], x_hat)* x.size()[0])
             MSE.append(mse_loss(x[:,:,1,:,:], x_hat))
+            #print (mse_loss(x[:,:,1,:,:], x_hat)/(64*64*len(x)))
             num_x += len(x)
 
     W1_distance = torch.Tensor(W1_distance)
@@ -124,7 +125,7 @@ def set_models_state(list_models, state):
 def set_opt_zero(opts):
     for opt in opts:
         opt.zero_grad()
-
+        
 
 def main():
     args = parser.parse_args()
@@ -142,17 +143,10 @@ def main():
     L = args.L
     path = args.path
     pre_path = args.pre_path
-    
-    #No quantization:
-    stochastic = True
-    quantize_latents = True
-    if L == -1:
-        stochastic = False
-        quantize_latents = False
-    print ('Stochastic: ', stochastic)
-    print ('Quantize: ', quantize_latents)
+
+    #Create folder
     #Create folder:
-    folder_name='R1eps_dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_'+str(L)+'|lambda_gp_'+str(lambda_gp) \
+    folder_name='universal_dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_' + str(L) +'|lambda_gp_'+str(lambda_gp) \
         +'|bs_'+str(bs)+'|dpenalty_'+str(d_penalty)+'|lambdaP_'+str(lambda_P)+'|lambdaPM_'+str(lambda_PM)+'|lambdaMSE_' + str(lambda_MSE)
     print ("Settings: ", folder_name)
 
@@ -162,7 +156,7 @@ def main():
     #Define Models
     discriminator = Discriminator_v3(out_ch=2) #Generator Side
     discriminator_M = Discriminator_v3(out_ch=1) #Marginal Discriminator
-    ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=stochastic, quantize_latents=quantize_latents, L=L)
+    ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L, freeze_enc=True)
 
     list_models = [discriminator, discriminator_M, ssf]
 
@@ -171,26 +165,19 @@ def main():
     discriminator_M.cuda()
 
     #Load models:
-    if pre_path != 'None':
-        prefix_path = 'R1eps_z'+str(z_dim)+'l'+str(L)+'_MMSE'
-        ssf.motion_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_enc.pth'))
-        ssf.motion_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_dec.pth'))
-        ssf.P_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/p_enc.pth'))
-        ssf.res_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_enc.pth'))
-        ssf.res_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_dec.pth'))
+    prefix_path = 'z'+str(z_dim)+'l'+str(L)+'_MMSE'
+    ssf.motion_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_enc.pth'))
+    ssf.motion_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/m_dec.pth'))
+    ssf.P_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/p_enc.pth'))
+    ssf.res_encoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_enc.pth'))
+    ssf.res_decoder.load_state_dict(torch.load(pre_path+prefix_path+'/r_dec.pth'))
 
-    #Define fixed model
-    I_dim = 12 #8
-    encoder = Encoder(dim=I_dim, nc=1, stochastic=True, quantize_latents=True, L=2) #Generator Side
-    decoder = Decoder_Iframe(dim=I_dim) #Generator Side
-
-    encoder.cuda()
-    decoder.cuda()
-    encoder.eval()
-    decoder.eval()
-    encoder.load_state_dict(torch.load('./Iframe/I3/I_frame_encoder_zdim_12_L_2.pth'))
-    decoder.load_state_dict(torch.load('./Iframe/I3/I_frame_decoder_zdim_12_L_2.pth'))
-
+    discriminator.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator.pth'))
+    discriminator_M.load_state_dict(torch.load(pre_path+prefix_path+'/discriminator_M.pth'))
+    
+    ssf.motion_encoder.eval()
+    ssf.res_encoder.eval()
+    
     #Define Data Loader
     train_loader, test_loader = get_dataloader(data_root=path, seq_len=8, batch_size=bs, num_digits=1)
     mse = torch.nn.MSELoss()
@@ -199,8 +186,19 @@ def main():
     opt_ssf= torch.optim.Adam(ssf.parameters(), lr=1e-5)
     opt_d = torch.optim.Adam(discriminator.parameters(), lr=1e-5)
     opt_dm = torch.optim.Adam(discriminator_M.parameters(), lr=1e-5)
-
+    
     list_opt = [opt_ssf, opt_d, opt_dm]
+    
+    ssf.motion_encoder.eval()
+    ssf.res_encoder.eval()
+    
+    for param in ssf.motion_encoder.parameters():
+        print(param.data[0])
+        break
+
+    for param in ssf.res_encoder.parameters():
+        print(param.data[0])
+        break
 
     for epoch in range(total_epochs):
         set_models_state(list_models, 'train')
@@ -212,14 +210,12 @@ def main():
             x = x.permute(0, 4, 1, 2, 3)
             x = x.cuda().float()
             x_cur = x[:,:,1,...]
-            with torch.no_grad():
-                x_ref = decoder(encoder(x[:,:,0,...])[0]).detach()
-            x_ref[x_ref < 0.1] = 0.0
+            x_ref = x[:,:,0,...]
             x_hat = ssf(x_cur, x_ref)
 
 
             #Optimize discriminator
-            fake_vid = torch.cat((x_ref, x_hat), dim = 1)
+            fake_vid = torch.cat((x[:,:,0,:,:], x_hat), dim = 1)
             real_vid = x[:,0,:2,...].detach() #this looks good!
             fake_validity = discriminator(fake_vid.detach())
             real_validity = discriminator(real_vid)
@@ -251,20 +247,20 @@ def main():
                 fake_validity_im = discriminator_M(fake_img)
                 errIG = -torch.mean(fake_validity_im)
 
-                loss = lambda_MSE*mse(x_hat, x_cur) + lambda_P*errVG + + lambda_PM*errIG
+                loss = lambda_MSE*mse(x_hat, x_cur) + lambda_P*errVG +  lambda_PM*errIG
                 loss.backward()
 
                 opt_ssf.step()
-
+                
         if epoch %10 == 0:
             show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE, d_penalty " + str(lambda_PM) + str(lambda_P)+ " " \
-            +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, encoder, decoder, discriminator, discriminator_M, test_loader, list_models))
+            +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, discriminator, discriminator_M, test_loader))
             print (show_str)
-
+        
             f.write(show_str+"\n")
-
+    
     show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE, d_penalty " + str(lambda_PM) + str(lambda_P)+ " " \
-            +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, encoder, decoder, discriminator, discriminator_M, test_loader, list_models))
+            +str(lambda_MSE) + " " + str(d_penalty) + " P loss: " + str(cal_W1(ssf, discriminator, discriminator_M, test_loader))
     print (show_str)
     f.write(show_str+"\n")
 
@@ -279,6 +275,13 @@ def main():
     torch.save(discriminator_M.state_dict(), os.path.join("./saved_models/" + folder_name, 'discriminator_M.pth'))
 
     f.close()
+    
+    for param in ssf.motion_encoder.parameters():
+        print(param.data[0])
+        break
+    for param in ssf.res_encoder.parameters():
+        print(param.data[0])
+        break
 
     #save some figures
     for i,x in enumerate(iter(train_loader)):
