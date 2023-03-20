@@ -164,9 +164,9 @@ def main():
     d_penalty = args.d_penalty #0
     skip_fq = args.skip_fq #10
     total_epochs = args.total_epochs #200
-    lambda_P = args.lambda_P
-    lambda_PM = args.lambda_PM
-    lambda_MSE = args.lambda_MSE
+    lambda_P = args.lambda_P*1e-3
+    lambda_PM = args.lambda_PM*1e-3
+    lambda_MSE = args.lambda_MSE*1e-3
     L = args.L
     path = args.path
     pre_path = args.pre_path
