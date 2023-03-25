@@ -624,8 +624,7 @@ class ScaleSpaceFlow_R1eps(nn.Module):
         quantize_latents = False,
         L=2, q_limits=(-1.0, 1.0),
         freeze_enc=False,
-        cond_r_enc=False,
-        T = 2
+        T=2
     ):
         super().__init__()
 
@@ -694,7 +693,6 @@ class ScaleSpaceFlow_R1eps(nn.Module):
         self.L=L
         self.q_limits=q_limits
         self.freeze_enc= freeze_enc
-        self.cond_r_enc = cond_r_enc
 
         if self.quantize_latents:
             # Quantize to L uniformly spaced points between limits
@@ -707,12 +705,9 @@ class ScaleSpaceFlow_R1eps(nn.Module):
             if self.quantize_latents:
                 self.alpha = (q_limits[1] - q_limits[0])/(L-1)
 
-        if self.cond_r_enc:
-            self.res_encoder = Encoder(2, out_planes=dim)
-            self.P_encoder = Encoder_P(T, out_planes=192)
-        else:
-            self.res_encoder = Encoder(T+1, out_planes=dim)
-            self.P_encoder = Encoder_P(T, out_planes=192)
+        self.P_encoder = Encoder_P(2, out_planes=192)
+
+        self.res_encoder = Encoder(3, out_planes=dim)
 
         self.res_decoder = Decoder(1, in_planes=dim + 192)
 
@@ -743,10 +738,9 @@ class ScaleSpaceFlow_R1eps(nn.Module):
             y = y - noise
         return y
 
-    def forward(self, x_cur, x_ref, x_cond):
-        #x_ref: MMSE of previous frame
-        #x_cond: x_hat of previous construction
+    def forward(self, x_cur, x_ref, x_hat=None):
         if not self.freeze_enc:
+            # x_ref is mse solution
             # encode the motion information
             x = torch.cat((x_cur, x_ref), dim=1)
             y_motion = self.motion_encoder(x)
@@ -760,13 +754,14 @@ class ScaleSpaceFlow_R1eps(nn.Module):
             motion_info = self.motion_decoder(y_motion)
             #print ("Motion Info: ", y_motion.shape)
             x_pred = self.forward_prediction(x_ref, motion_info)
-
+            if x_hat == None:
+                x_hat = x_pred #no conditioning, else we condition it.
             # residual
-            x_res = torch.cat((x_cur, x_pred, x_cond), dim=1)#x_cur - x_pred
+            x_res = torch.cat((x_cur, x_pred, x_hat), dim=1)#x_cur - x_pred
             y_res = self.res_encoder(x_res)
             y_res = self.quantize_noise(y_res)
 
-            y_pred = self.P_encoder(torch.cat((x_pred, x_cond), dim=1))
+            y_pred = self.P_encoder(torch.cat((x_hat, x_pred), dim=1))
 
             #print ("Residual Info: ", y_res.shape)
 
@@ -778,32 +773,26 @@ class ScaleSpaceFlow_R1eps(nn.Module):
             x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
         else:
             with torch.no_grad():
-                # encode the motion information
                 x = torch.cat((x_cur, x_ref), dim=1)
                 y_motion = self.motion_encoder(x)
-
-                #print (y_motion.min())
-                #print (y_motion.max())
-                # Quantize
                 y_motion = self.quantize_noise(y_motion)
 
-                # decode the space-scale flow information
+                #Before this
                 motion_info = self.motion_decoder(y_motion)
                 #print ("Motion Info: ", y_motion.shape)
                 x_pred = self.forward_prediction(x_ref, motion_info)
+                if x_hat == None:
+                    x_hat = x_pred #no conditioning, else we condition it.
 
             with torch.no_grad():
-                # residual
                 x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
                 y_res = self.res_encoder(x_res)
                 y_res = self.quantize_noise(y_res)
 
-                y_pred = self.P_encoder(torch.cat((x_pred, x_cond), dim=1))
+                #OK this
 
-                #print ("Residual Info: ", y_res.shape)
-
-                # y_combine
-                y_combine = torch.cat((y_res, y_pred), dim=1)
+            y_pred = self.P_encoder(torch.cat((x_hat, x_pred), dim=1))
+            y_combine = torch.cat((y_res, y_pred), dim=1)
 
             x_res_hat = self.res_decoder(y_combine)
 
@@ -904,7 +893,7 @@ class ScaleSpaceFlow_R1eps(nn.Module):
                 aux_loss_list.append(m.aux_loss())
 
         return aux_loss_list
-    
+
 class ScaleSpaceFlow_R1eps_universal(nn.Module):
     r"""Google's first end-to-end optimized video compression from E.
     Agustsson, D. Minnen, N. Johnston, J. Balle, S. J. Hwang, G. Toderici: `"Scale-space flow for end-to-end
@@ -1007,11 +996,11 @@ class ScaleSpaceFlow_R1eps_universal(nn.Module):
             # Else if not quantizing, make alpha default value of 0.25
             if self.quantize_latents:
                 self.alpha = (q_limits[1] - q_limits[0])/(L-1)
-        
+
         self.P_encoder = Encoder_P(2, out_planes=192)
-            
+
         self.res_encoder = Encoder(2, out_planes=dim)
-        
+
         self.res_decoder = Decoder(1, in_planes=dim + 192)
 
         self.motion_encoder = Encoder(2 * 1, out_planes=dim)
@@ -1062,7 +1051,7 @@ class ScaleSpaceFlow_R1eps_universal(nn.Module):
             x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
             y_res = self.res_encoder(x_res)
             y_res = self.quantize_noise(y_res)
-            
+
             if x_hat == None:
                 x_hat = x_pred #no conditioning, else we condition it.
             y_pred = self.P_encoder(torch.cat((x_hat, x_pred), dim=1))
