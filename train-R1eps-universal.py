@@ -98,8 +98,9 @@ def cal_W1(ssf, encoder, decoder, decoder_hat, discriminator, discriminator_M, t
             x = x.cuda().float()
             x_cur = x[:,:,1,...]
             with torch.no_grad():
-                x_ref = decoder(encoder(x[:,:,0,...])[0]).detach()
-                x_1_hat = decoder_hat(encoder(x[:,:,0,...])[0]).detach()
+                hx = encoder(x[:,:,0,...]
+                x_ref = decoder(hx)[0]).detach()
+                x_1_hat = decoder_hat(hx)[0]).detach()
             #x_ref[x_ref < 0.1] = 0.0
             x_hat = ssf(x_cur, x_ref, x_1_hat)
 
@@ -190,7 +191,7 @@ def main():
     #Define Models
     discriminator = Discriminator_v3(out_ch=2) #Generator Side
     discriminator_M = Discriminator_v3(out_ch=1) #Marginal Discriminator
-    ssf = ScaleSpaceFlow_R1eps_universal(num_levels=1, dim=z_dim, stochastic=stochastic, quantize_latents=quantize_latents, L=L)
+    ssf = ScaleSpaceFlow_R1eps_universal(num_levels=1, dim=z_dim, stochastic=stochastic, quantize_latents=quantize_latents, L=L, freeze_enc=True)
     ssf.freeze_enc = True
 
     list_models = [discriminator, discriminator_M, ssf]
@@ -249,8 +250,9 @@ def main():
             x = x.cuda().float()
             x_cur = x[:,:,1,...]
             with torch.no_grad():
-                x_ref = decoder(encoder(x[:,:,0,...])[0]).detach()
-                x_1_hat = decoder_hat(encoder(x[:,:,0,...])[0]).detach()
+                hx = encoder(x[:,:,0,...]
+                x_ref = decoder(encoder(hx)[0]).detach()
+                x_1_hat = decoder_hat(encoder(hx)[0]).detach()
             #x_ref[x_ref < 0.1] = 0.0
             x_hat = ssf(x_cur, x_ref, x_1_hat)
 

@@ -98,8 +98,9 @@ def cal_W1(ssf, encoder, decoder, decoder_hat, discriminator, discriminator_M, t
             x = x.cuda().float()
             x_cur = x[:,:,1,...]
             with torch.no_grad():
-                x_ref = decoder(encoder(x[:,:,0,...])[0]).detach()
-                x_1_hat = decoder_hat(encoder(x[:,:,0,...])[0]).detach()
+                hx = encoder(x[:,:,0,...])[0]
+                x_ref = decoder(hx).detach()
+                x_1_hat = decoder_hat(hx).detach()
             #x_ref[x_ref < 0.1] = 0.0
             x_hat = ssf(x_cur, x_ref, x_1_hat)
 
@@ -248,8 +249,9 @@ def main():
             x = x.cuda().float()
             x_cur = x[:,:,1,...]
             with torch.no_grad():
-                x_ref = decoder(encoder(x[:,:,0,...])[0]).detach()
-                x_1_hat = decoder_hat(encoder(x[:,:,0,...])[0]).detach()
+                hx = encoder(x[:,:,0,...])[0]
+                x_ref = decoder(hx)[0]).detach()
+                x_1_hat = decoder_hat(hx)[0]).detach()
             #x_ref[x_ref < 0.1] = 0.0
             x_hat = ssf(x_cur, x_ref, x_1_hat)
 
