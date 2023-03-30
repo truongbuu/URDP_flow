@@ -233,8 +233,8 @@ def main():
 
     #discriminator.train()
     opt_ssf= torch.optim.RMSprop(ssf.parameters(), lr=1e-5)
-    opt_d = torch.optim.RMSprop(discriminator.parameters(), lr=1e-5)
-    opt_dm = torch.optim.RMSprop(discriminator_M.parameters(), lr=1e-5)
+    opt_d = torch.optim.RMSprop(discriminator.parameters(), lr=5e-5)
+    opt_dm = torch.optim.RMSprop(discriminator_M.parameters(), lr=5e-5)
 
     list_opt = [opt_ssf, opt_d, opt_dm]
 
@@ -250,8 +250,8 @@ def main():
             x_cur = x[:,:,1,...]
             with torch.no_grad():
                 hx = encoder(x[:,:,0,...])[0]
-                x_ref = decoder(hx)[0]).detach()
-                x_1_hat = decoder_hat(hx)[0]).detach()
+                x_ref = decoder(hx).detach()
+                x_1_hat = decoder_hat(hx).detach()
             #x_ref[x_ref < 0.1] = 0.0
             x_hat = ssf(x_cur, x_ref, x_1_hat)
 
