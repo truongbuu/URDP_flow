@@ -340,7 +340,8 @@ class ScaleSpaceFlow(nn.Module):
         stochastic = False,
         quantize_latents = False,
         L=2, q_limits=(-1.0, 1.0),
-        freeze_enc=False
+        freeze_enc=False,
+        single_bit=False
     ):
         super().__init__()
 
@@ -408,6 +409,7 @@ class ScaleSpaceFlow(nn.Module):
         self.quantize_latents = quantize_latents
         self.L=L
         self.q_limits=q_limits
+        self.single_bit = single_bit
 
         if self.quantize_latents:
             # Quantize to L uniformly spaced points between limits
@@ -472,6 +474,9 @@ class ScaleSpaceFlow(nn.Module):
             y_res = self.res_encoder(x_res)
             y_res = self.quantize_noise(y_res)
 
+            if self.single_bit:
+                y_res=0*y_res
+                
             y_pred = self.P_encoder(x_pred)
 
             #print ("Residual Info: ", y_res.shape)
@@ -515,6 +520,7 @@ class ScaleSpaceFlow(nn.Module):
             y_motion = self.motion_encoder(x)
             y_motion = self.quantize_noise(y_motion)
 
+            #Before this
             motion_info = self.motion_decoder(y_motion)
             #print ("Motion Info: ", y_motion.shape)
             x_pred = self.forward_prediction(x_ref, motion_info)
@@ -524,6 +530,7 @@ class ScaleSpaceFlow(nn.Module):
             y_res = self.res_encoder(x_res)
             y_res = self.quantize_noise(y_res)
 
+            #OK this
             y_pred = self.P_encoder(x_pred)
             y_combine = torch.cat((y_res, y_pred), dim=1)
         #x_res_hat = self.res_decoder(y_combine)
@@ -531,7 +538,7 @@ class ScaleSpaceFlow(nn.Module):
         # final reconstruction: prediction + residual
         #x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
 
-        return y_combine
+        return y_combine, y_motion, y_res
 
     def forward_dec(self, y_combine):
         with torch.no_grad():
@@ -801,27 +808,28 @@ class ScaleSpaceFlow_R1eps(nn.Module):
 
         return x_rec
 
-    def forward_enc(self, x_cur, x_ref):
+    def forward_enc(self, x_cur, x_ref, x_hat=None):
         with torch.no_grad():
             x = torch.cat((x_cur, x_ref), dim=1)
             y_motion = self.motion_encoder(x)
             y_motion = self.quantize_noise(y_motion)
 
+            #Before this
             motion_info = self.motion_decoder(y_motion)
             #print ("Motion Info: ", y_motion.shape)
             x_pred = self.forward_prediction(x_ref, motion_info)
+            if x_hat == None:
+                x_hat = x_pred #no conditioning, else we condition it.
 
         with torch.no_grad():
             x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
             y_res = self.res_encoder(x_res)
             y_res = self.quantize_noise(y_res)
 
-            y_pred = self.P_encoder(x_pred)
-            y_combine = torch.cat((y_res, y_pred), dim=1)
-        #x_res_hat = self.res_decoder(y_combine)
+            #OK this
 
-        # final reconstruction: prediction + residual
-        #x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
+        y_pred = self.P_encoder(torch.cat((x_hat, x_pred), dim=1))
+        y_combine = torch.cat((y_res, y_pred), dim=1)
 
         return y_combine
 
