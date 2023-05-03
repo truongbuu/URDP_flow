@@ -383,7 +383,7 @@ class Discriminator(nn.Module):
 class Discriminator_v3(nn.Module):
     def __init__(self, ch=64, out_ch=2):
         super(Discriminator_v3, self).__init__()
-        
+
         self.net = nn.Sequential(
             spectralnorm(nn.Conv2d(out_ch, ch, 4, 2, 1)),
             nn.LeakyReLU(0.2, inplace=True),
@@ -399,7 +399,7 @@ class Discriminator_v3(nn.Module):
 
             nn.Conv2d(ch*8, 1, 4, 1, 0),
         )
-        
+
         """self.net = nn.Sequential(
             nn.Conv2d(out_ch, ch, 4, 2, 1),
             nn.LeakyReLU(0.2, inplace=True),
@@ -428,7 +428,7 @@ class Discriminator_v3(nn.Module):
         out = self.net(x)
 
         return out.squeeze(-1).squeeze(-1).squeeze(-1)
-    
+
 class Discriminator_Iframe(nn.Module):
     def __init__(self, ch=64, out_ch=1):
         super(Discriminator_Iframe, self).__init__()
@@ -466,3 +466,100 @@ class Discriminator_Iframe(nn.Module):
         out = self.net(x)
 
         return out.squeeze(-1).squeeze(-1).squeeze(-1)
+
+class Discriminator_KTH_dataset_wgan(nn.Module):
+    def __init__(self, ngpu=1, nc=3, ndf=64):
+        super(Discriminator_KTH_dataset_wgan, self).__init__()
+        self.ngpu = ngpu
+        self.main = nn.Sequential(
+            # input is (nc) x 64 x 64
+            spectralnorm(nn.Conv2d(nc, ndf, 4, 2, 1, bias=True)),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 32 x 32
+            spectralnorm(nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=True)),
+            #nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 16 x 16
+            spectralnorm(nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=True)),
+            #nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 8 x 8
+            spectralnorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=True)),
+            #nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=True)
+        )
+
+    def forward(self, input):
+        if input.is_cuda and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
+        else:
+            output = self.main(input)
+
+        return output.view(-1, 1).squeeze(1)
+    
+class Discriminator_KTH_dcgan(nn.Module):
+    def __init__(self, ngpu=1,nc=3, ndf=64):
+        super(Discriminator_KTH_dcgan, self).__init__()
+        self.ngpu = ngpu
+        self.main = nn.Sequential(
+            # input is (nc) x 64 x 64
+            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 32 x 32
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 16 x 16
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 8 x 8
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, input):
+        if input.is_cuda and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
+        else:
+            output = self.main(input)
+
+        return output.view(-1, 1).squeeze(1)
+
+class Discriminator_KTH_dataset_wgan_no_spectral(nn.Module):
+    def __init__(self, ngpu=1, nc=3, ndf=64):
+        super(Discriminator_KTH_dataset_wgan_no_spectral, self).__init__()
+        self.ngpu = ngpu
+        self.main = nn.Sequential(
+            # input is (nc) x 64 x 64
+            nn.Conv2d(nc, ndf, 4, 2, 1, bias=True),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 32 x 32
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=True),
+            #nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 16 x 16
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=True),
+            #nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 8 x 8
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=True),
+            #nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=True)
+        )
+
+    def forward(self, input):
+        if input.is_cuda and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.main, input, range(self.ngpu))
+        else:
+            output = self.main(input)
+
+        return output.view(-1, 1).squeeze(1)
