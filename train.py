@@ -47,7 +47,7 @@ parser.add_argument('--lambda_PM', type=float, default=0.0, help='Perceptual Pen
 parser.add_argument('--lambda_MSE', type=float, default=1.0, help='Perceptual Penalty')
 parser.add_argument('--path', type=str, default='./data/', help='Data Path')
 parser.add_argument('--pre_path', type=str, default='None', help='Pretrained_Path')
-
+parser.add_argument('--single_bit', type=bool, default=False)
 
 def compute_gradient_penalty(D, real_samples, fake_samples):
     """Calculates the gradient penalty loss for WGAN GP"""
@@ -143,10 +143,10 @@ def main():
     L = args.L
     path = args.path
     pre_path = args.pre_path
-
+    single_bit = args.single_bit
     #Create folder
     #Create folder:
-    folder_name='dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_'+str(L)+'|lambda_gp_'+str(lambda_gp) \
+    folder_name='dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_'+str(L)+'|_single_bit'+str(single_bit)+'|lambda_gp_'+str(lambda_gp) \
         +'|bs_'+str(bs)+'|dpenalty_'+str(d_penalty)+'|lambdaP_'+str(lambda_P)+'|lambdaPM_'+str(lambda_PM)+'|lambdaMSE_' + str(lambda_MSE)
     print ("Settings: ", folder_name)
 
@@ -156,7 +156,7 @@ def main():
     #Define Models
     discriminator = Discriminator_v3(out_ch=2) #Generator Side
     discriminator_M = Discriminator_v3(out_ch=1) #Marginal Discriminator
-    ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L)
+    ssf = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L,single_bit=single_bit)
 
     list_models = [discriminator, discriminator_M, ssf]
 
