@@ -426,6 +426,9 @@ class ScaleSpaceFlow(nn.Module):
         self.P_encoder = Encoder_P(1, out_planes=192)
         self.res_decoder = Decoder(1, in_planes=dim + 192)
 
+        self.P_encoder_MSE = Encoder_P(1, out_planes=192)
+        self.res_decoder_MSE = Decoder(1, in_planes=dim + 192)
+
         self.motion_encoder = Encoder(2 * 1, out_planes=dim)
         self.motion_decoder = Decoder(2 + 1, in_planes=dim)
 
@@ -503,9 +506,9 @@ class ScaleSpaceFlow(nn.Module):
                 y_res = self.res_encoder(x_res)
                 y_res = self.quantize_noise(y_res)
 
-                #OK this
-                y_pred = self.P_encoder(x_pred)
-                y_combine = torch.cat((y_res, y_pred), dim=1)
+            #OK this
+            y_pred = self.P_encoder(x_pred)
+            y_combine = torch.cat((y_res, y_pred), dim=1)
 
             x_res_hat = self.res_decoder(y_combine)
 
@@ -516,32 +519,35 @@ class ScaleSpaceFlow(nn.Module):
 
     def forward_enc(self, x_cur, x_ref):
         with torch.no_grad():
-            x = torch.cat((x_cur, x_ref), dim=1)
-            y_motion = self.motion_encoder(x)
-            y_motion = self.quantize_noise(y_motion)
+                x = torch.cat((x_cur, x_ref), dim=1)
+                y_motion = self.motion_encoder(x)
+                y_motion = self.quantize_noise(y_motion)
 
-            #Before this
-            motion_info = self.motion_decoder(y_motion)
-            #print ("Motion Info: ", y_motion.shape)
-            x_pred = self.forward_prediction(x_ref, motion_info)
+                #Before this
+                motion_info = self.motion_decoder(y_motion)
+                #print ("Motion Info: ", y_motion.shape)
+                x_pred = self.forward_prediction(x_ref, motion_info)
 
         with torch.no_grad():
             x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
             y_res = self.res_encoder(x_res)
             y_res = self.quantize_noise(y_res)
 
-        #OK this
-        y_pred = self.P_encoder(x_pred)
-        y_combine = torch.cat((y_res, y_pred), dim=1)
-        #x_res_hat = self.res_decoder(y_combine)
+        return y_res, x_pred
 
-        # final reconstruction: prediction + residual
-        #x_rec = torch.sigmoid(x_res_hat) #x_pred + x_res_hat
-
-        return y_combine, y_motion, y_res
-
-    def forward_dec(self, y_combine):
+    def forward_dec_MSE(self, y_res, x_pred):
         with torch.no_grad():
+            y_pred = self.P_encoder_MSE(torch.cat((x_pred, x_pred.detach()), dim=1))
+            y_combine = torch.cat((y_res, y_pred), dim=1)
+            x_res_hat = self.res_decoder_MSE(y_combine)
+            x_rec = torch.sigmoid(x_res_hat)
+
+        return x_rec
+
+    def forward_dec(self, y_res, x_pred, x_hat):
+        with torch.no_grad():
+            y_pred = self.P_encoder(torch.cat((x_hat, x_pred), dim=1))
+            y_combine = torch.cat((y_res, y_pred), dim=1)
             x_res_hat = self.res_decoder(y_combine)
             x_rec = torch.sigmoid(x_res_hat)
 
@@ -1217,7 +1223,8 @@ class ScaleSpaceFlow_R1eps_universal_3frames(nn.Module):
         L=2, q_limits=(-1.0, 1.0),
         freeze_enc=False,
         T=2,
-        num_c=3
+        num_c=3,
+        single_bit=False
     ):
         super().__init__()
 
