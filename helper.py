@@ -1224,7 +1224,8 @@ class ScaleSpaceFlow_R1eps_universal_3frames(nn.Module):
         freeze_enc=False,
         T=2,
         num_c=3,
-        single_bit=False
+        single_bit=False,
+        activation=torch.tanh
     ):
         super().__init__()
 
@@ -1293,6 +1294,7 @@ class ScaleSpaceFlow_R1eps_universal_3frames(nn.Module):
         self.L=L
         self.q_limits=q_limits
         self.freeze_enc= freeze_enc
+        self.activation= activation
 
         if self.quantize_latents:
             # Quantize to L uniformly spaced points between limits
@@ -1372,7 +1374,7 @@ class ScaleSpaceFlow_R1eps_universal_3frames(nn.Module):
             x_res_hat = self.res_decoder(y_combine)
 
             # final reconstruction: prediction + residual
-            x_rec = torch.tanh(x_res_hat) #x_pred + x_res_hat
+            x_rec = self.activation(x_res_hat) #x_pred + x_res_hat
         else:
             with torch.no_grad():
                 x = torch.cat((x_cur, x_ref), dim=1)
@@ -1399,7 +1401,7 @@ class ScaleSpaceFlow_R1eps_universal_3frames(nn.Module):
             x_res_hat = self.res_decoder(y_combine)
 
             # final reconstruction: prediction + residual
-            x_rec = torch.tanh(x_res_hat) #x_pred + x_res_hat
+            x_rec = self.activation(x_res_hat) #x_pred + x_res_hat
 
         return x_rec
 
@@ -1430,7 +1432,7 @@ class ScaleSpaceFlow_R1eps_universal_3frames(nn.Module):
     def forward_dec(self, y_combine):
         with torch.no_grad():
             x_res_hat = self.res_decoder(y_combine)
-            x_rec = torch.sigmoid(x_res_hat)
+            x_rec = self.activation(x_res_hat)
 
         return x_rec
 
