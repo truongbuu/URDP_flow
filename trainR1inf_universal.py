@@ -147,7 +147,7 @@ def main():
 
     #Create folder
     #Create folder:
-    folder_name='universal_dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_' + str(L) +'|lambda_gp_'+str(lambda_gp) \
+    folder_name='universal_dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_' + str(L)+'|_single_bit'+str(single_bit)+ +'|lambda_gp_'+str(lambda_gp) \
         +'|bs_'+str(bs)+'|dpenalty_'+str(d_penalty)+'|lambdaP_'+str(lambda_P)+'|lambdaPM_'+str(lambda_PM)+'|lambdaMSE_' + str(lambda_MSE)
     print ("Settings: ", folder_name)
 
