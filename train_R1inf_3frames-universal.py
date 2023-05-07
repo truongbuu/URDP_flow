@@ -292,6 +292,7 @@ def main():
             show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE " + str(lambda_PM) + str(lambda_P)+ " " \
             +str(lambda_MSE) + " " + " P loss: " + str(cal_W1(ssf, ssf1_hat, discriminator, discriminator_M, test_loader))
             print (show_str)
+            f.write(show_str+"\n")
 
     show_str= "Epoch: "+ str(epoch) + "l_PM, l_P, l_MSE " + str(lambda_PM) + str(lambda_P)+ " " \
     +str(lambda_MSE) + " " + " P loss: " + str(cal_W1(ssf, ssf1_hat, discriminator, discriminator_M, test_loader))
