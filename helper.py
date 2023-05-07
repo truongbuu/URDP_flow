@@ -539,16 +539,17 @@ class ScaleSpaceFlow(nn.Module):
 
     def forward_dec_MSE(self, y_res, x_pred):
         with torch.no_grad():
-            y_pred = self.P_encoder_MSE(torch.cat((x_pred, x_pred.detach()), dim=1))
+            y_pred = self.P_encoder_MSE(x_pred)
+            #y_pred = self.P_encoder_MSE(torch.cat((x_pred, x_pred.detach()), dim=1))
             y_combine = torch.cat((y_res, y_pred), dim=1)
             x_res_hat = self.res_decoder_MSE(y_combine)
             x_rec = torch.sigmoid(x_res_hat)
 
         return x_rec
 
-    def forward_dec(self, y_res, x_pred, x_hat):
+    def forward_dec(self, y_res, x_pred, x_hat=None):
         with torch.no_grad():
-            y_pred = self.P_encoder(torch.cat((x_hat, x_pred), dim=1))
+            y_pred = self.P_encoder (x_pred)#(torch.cat((x_hat, x_pred), dim=1))
             y_combine = torch.cat((y_res, y_pred), dim=1)
             x_res_hat = self.res_decoder(y_combine)
             x_rec = torch.sigmoid(x_res_hat)
