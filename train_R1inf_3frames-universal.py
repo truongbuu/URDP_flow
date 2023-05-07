@@ -47,7 +47,7 @@ parser.add_argument('--lambda_PM', type=float, default=0.0, help='Perceptual Pen
 parser.add_argument('--lambda_MSE', type=float, default=1.0, help='Perceptual Penalty')
 parser.add_argument('--path', type=str, default='./data/', help='Data Path')
 parser.add_argument('--pre_path', type=str, default='None', help='Pretrained_Path')
-parser.add_argument('--single_bit', type=bool, default=False)
+parser.add_argument('--single_bit', type=int, default=0)
 parser.add_argument('--dataset', type=str, default='MNIST')
 parser.add_argument('--pre_path1', type=str, default='None')
 parser.add_argument('--pre_path2', type=str, default='None')
@@ -152,7 +152,7 @@ def main():
     L = args.L
     path = args.path
     pre_path = args.pre_path
-    single_bit = args.single_bit
+    single_bit = bool(args.single_bit)
     dataset=args.dataset
     #Create folder
     #Create folder:

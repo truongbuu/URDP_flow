@@ -47,7 +47,7 @@ parser.add_argument('--lambda_PM', type=float, default=0.0, help='Perceptual Pen
 parser.add_argument('--lambda_MSE', type=float, default=1.0, help='Perceptual Penalty')
 parser.add_argument('--path', type=str, default='./data/', help='Data Path')
 parser.add_argument('--pre_path', type=str, default='None', help='Pretrained_Path')
-parser.add_argument('--single_bit', type=bool, default=False)
+parser.add_argument('--single_bit', type=int, default=0)
 
 def compute_gradient_penalty(D, real_samples, fake_samples):
     """Calculates the gradient penalty loss for WGAN GP"""
@@ -143,7 +143,7 @@ def main():
     L = args.L
     path = args.path
     pre_path = args.pre_path
-    single_bit = args.single_bit
+    single_bit = bool(args.single_bit)
     #Create folder
     #Create folder:
     folder_name='dim_'+str(dim)+'|z_dim_'+str(z_dim)+'|L_'+str(L)+'|_single_bit'+str(single_bit)+'|lambda_gp_'+str(lambda_gp) \
