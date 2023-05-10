@@ -1725,7 +1725,7 @@ class ScaleSpaceFlow_R1eps_e2e_3frames(nn.Module):
                 if x_hat1 == None and x_hat2==None:
                     x_hat1 = x_pred.detach() #no conditioning, else we condition it.
                     x_hat2 = x_pred.detach()
-                x_res = torch.cat((x_cur, x_pred, x_hat1, x_hat2), dim=1)#x_cur - x_pred
+                x_res = torch.cat((x_cur, x_pred), dim=1)#x_cur - x_pred
                 y_res = self.res_encoder(x_res)
                 y_res = self.quantize_noise(y_res)
 
