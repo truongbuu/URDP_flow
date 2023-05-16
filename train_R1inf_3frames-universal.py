@@ -175,7 +175,7 @@ def main():
     discriminator_M = Discriminator_v3(out_ch=1) #Marginal Discriminator
 
     ssf1_hat = ScaleSpaceFlow(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L,single_bit=single_bit)
-    ssf = ScaleSpaceFlow_R1eps_e2e_3frames(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L\
+    ssf = ScaleSpaceFlow_R1eps_universal_3frames(num_levels=1, dim=z_dim, stochastic=True, quantize_latents=True, L=L\
                                                  ,single_bit=single_bit,num_c=1, activation=activation)
     if lambda_P>0.0 or lambda_PM>0.0:
         ssf.freeze_enc=True

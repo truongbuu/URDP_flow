@@ -98,9 +98,9 @@ def cal_W1(ssf, encoder, decoder, decoder_hat, discriminator, discriminator_M, t
             x = x.cuda().float()
             x_cur = x[:,:,1,...]
             with torch.no_grad():
-                hx = encoder(x[:,:,0,...]
-                x_ref = decoder(hx)[0]).detach()
-                x_1_hat = decoder_hat(hx)[0]).detach()
+                hx = encoder(x[:,:,0,...])[0]
+                x_ref = decoder(hx).detach()
+                x_1_hat = decoder_hat(hx).detach()
             #x_ref[x_ref < 0.1] = 0.0
             x_hat = ssf(x_cur, x_ref, x_1_hat)
 
@@ -165,9 +165,9 @@ def main():
     d_penalty = args.d_penalty #0
     skip_fq = args.skip_fq #10
     total_epochs = args.total_epochs #200
-    lambda_P = args.lambda_P*1e-3
-    lambda_PM = args.lambda_PM*1e-3
-    lambda_MSE = args.lambda_MSE*1e-3
+    lambda_P = args.lambda_P
+    lambda_PM = args.lambda_PM
+    lambda_MSE = args.lambda_MSE
     L = args.L
     path = args.path
     pre_path = args.pre_path
@@ -233,9 +233,9 @@ def main():
     mse = torch.nn.MSELoss()
 
     #discriminator.train()
-    opt_ssf= torch.optim.RMSprop(ssf.parameters(), lr=1e-5)
-    opt_d = torch.optim.RMSprop(discriminator.parameters(), lr=1e-5)
-    opt_dm = torch.optim.RMSprop(discriminator_M.parameters(), lr=1e-5)
+    opt_ssf= torch.optim.RMSprop(ssf.parameters(), lr=5e-5)
+    opt_d = torch.optim.RMSprop(discriminator.parameters(), lr=5e-5)
+    opt_dm = torch.optim.RMSprop(discriminator_M.parameters(), lr=5e-5)
 
     list_opt = [opt_ssf, opt_d, opt_dm]
 
@@ -250,9 +250,9 @@ def main():
             x = x.cuda().float()
             x_cur = x[:,:,1,...]
             with torch.no_grad():
-                hx = encoder(x[:,:,0,...]
-                x_ref = decoder(encoder(hx)[0]).detach()
-                x_1_hat = decoder_hat(encoder(hx)[0]).detach()
+                hx = encoder(x[:,:,0,...])[0]
+                x_ref = decoder(hx).detach()
+                x_1_hat = decoder_hat(hx).detach()
             #x_ref[x_ref < 0.1] = 0.0
             x_hat = ssf(x_cur, x_ref, x_1_hat)
 
