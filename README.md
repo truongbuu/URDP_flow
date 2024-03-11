@@ -9,4 +9,7 @@ We study causal, low-latency, sequential video compression when the output is su
 
 We include the training code for the MNIST dataset, including two scenarios: (R1, R2) = (inf, eps) and (R1,R2) = (eps, eps). For the error permanence phenomenon, where the decoder keeps repeating the reconstruction mistake from previous frames, please refer to the (R1, R2) = (eps, eps) scenario.
 
+Our video compression model is developed based on the Scaled-Space Flow model [https://github.com/InterDigitalInc/CompressAI](https://github.com/InterDigitalInc/CompressAI) with some modifications, detailed in our paper.  
+
+# Training for inf-eps model.
 
